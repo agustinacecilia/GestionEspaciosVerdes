@@ -14,11 +14,11 @@ from folium.plugins import MarkerCluster
 # Cargar los datasets
 @st.cache_data
 def cargar_datos():
-    registro_arboles_df = pd.read_csv('C:/Users/Usuario/Desktop/Datathon/RegistroArboles_actualizado.csv')
-    espacios_verdes_df = pd.read_csv('C:/Users/Usuario/Desktop/Datathon/EspaciosVerdes.csv')
-    puntos_verdes_df = pd.read_csv('C:/Users/Usuario/Desktop/Datathon/PuntosVerdes.csv')
-    mantenimiento_arboles_df = pd.read_csv('C:/Users/Usuario/Desktop/Datathon/MantenimientoArboles.csv')
-    barrios_df = pd.read_csv('C:/Users/Usuario/Desktop/Datathon/Barrios.csv')
+    registro_arboles_df = pd.read_csv('./data/RegistroArboles_actualizado.csv')
+    espacios_verdes_df = pd.read_csv('./data/EspaciosVerdes.csv')
+    puntos_verdes_df = pd.read_csv('./data/PuntosVerdes.csv')
+    mantenimiento_arboles_df = pd.read_csv('./data/MantenimientoArboles.csv')
+    barrios_df = pd.read_csv('./data/Barrios.csv')
     return registro_arboles_df, espacios_verdes_df, puntos_verdes_df, mantenimiento_arboles_df, barrios_df
 
 # Configuración de la página
