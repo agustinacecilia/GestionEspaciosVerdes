@@ -450,3 +450,4 @@ elif opcion == "Estado de Salud de Árboles":
 elif opcion == "Espacios Verdes en Barrios":
     st.subheader("Gráfico de Espacios Verdes en los Barrios de la Ciudad")
     mostrar_grafico_espacios_barrios()
+st.markdown('<div class="footer">Desarrollado por Leguiza Agustina</div>', unsafe_allow_html=True)
