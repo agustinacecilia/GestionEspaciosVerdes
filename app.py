@@ -445,8 +445,14 @@ elif opcion == "Estado de Salud de Árboles":
 elif opcion == "Espacios Verdes en Barrios":
     st.subheader("Gráfico de Espacios Verdes en los Barrios de la Ciudad")
     mostrar_grafico_espacios_barrios()
-st.markdown(
-    '<div class="footer"><p><a href="https://datos.ciudaddecorrientes.gov.ar/dataset?groups=zoonosis" target="_blank">Fuente: Dataset del Portal de Datos Abiertos de Corrientes</a></p></div>',
-    unsafe_allow_html=True
-)
-st.markdown('<div class="footer">Desarrollado por Leguiza Agustina</div>', unsafe_allow_html=True)
+
+# Footer
+st.markdown("""
+    <div class="footer">
+        <p>
+            <a href="https://datos.ciudaddecorrientes.gov.ar/dataset?groups=zoonosis" target="_blank">Fuente: Dataset del Portal de Datos Abiertos de Corrientes</a>
+        </p>
+        <hr>
+        <p>Copyright © 2024 Desarrollado por Leguiza Agustina</p>
+    </div>
+""", unsafe_allow_html=True)

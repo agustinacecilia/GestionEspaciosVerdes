@@ -85,11 +85,18 @@ h1, h2, h3 {
 
 .footer {
     text-align: center;
-    font-size: 15px;
-    color: #224525;
-    margin-top: 20px;
     padding: 20px;
-    border-top: 1px solid #e0e0e0;
+    background-color: white; /* Color de fondo del footer */
+}
+
+.footer a {
+    color: black; /* Color del enlace */
+    text-decoration: none; /* Sin subrayado en el enlace */
+}
+
+.footer hr {
+    border: 1px solid black; /* Color y grosor de la línea */
+    margin: 10px 0; /* Margen superior e inferior */
 }
 
 
