@@ -89,12 +89,12 @@ h1, h2, h3 {
 }
 
 .footer a {
-    color: black; /* Color del enlace */
-    text-decoration: none; /* Sin subrayado en el enlace */
+    color: #224525; /* Color del enlace */
+    /*text-decoration: none;  Sin subrayado en el enlace */
 }
 
 .footer hr {
-    border: 1px solid black; /* Color y grosor de la línea */
+    border: 1px solid #224525; /* Color y grosor de la línea */
     margin: 10px 0; /* Margen superior e inferior */
 }
 
