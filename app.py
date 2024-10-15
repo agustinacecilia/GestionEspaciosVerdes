@@ -41,11 +41,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Agregar el enlace de fuente al final de la sección
-st.markdown(
-    "[Fuente: Dataset del Portal de Datos Abiertos de Corrientes](https://datos.ciudaddecorrientes.gov.ar/dataset?groups=zoonosis)",
-    unsafe_allow_html=True
-)
 
 # Cargar los datos
 registro_arboles_df, espacios_verdes_df, puntos_verdes_df, mantenimiento_arboles_df, barrios_df = cargar_datos()
@@ -450,4 +445,8 @@ elif opcion == "Estado de Salud de Árboles":
 elif opcion == "Espacios Verdes en Barrios":
     st.subheader("Gráfico de Espacios Verdes en los Barrios de la Ciudad")
     mostrar_grafico_espacios_barrios()
+st.markdown(
+    '<div class="footer"><p><a href="https://datos.ciudaddecorrientes.gov.ar/dataset?groups=zoonosis" target="_blank">Fuente: Dataset del Portal de Datos Abiertos de Corrientes</a></p></div>',
+    unsafe_allow_html=True
+)
 st.markdown('<div class="footer">Desarrollado por Leguiza Agustina</div>', unsafe_allow_html=True)
