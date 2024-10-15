@@ -1,0 +1,87 @@
+/* styles.css */
+
+/* Estilo general */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #9dd89f!important;
+    color: #333;
+}
+
+.stApp {
+    background-color: #9dd89f !important; /* Aplicar a la clase de la app de Streamlit */
+   
+}
+
+/* Estilo de los íconos para reducir el espacio entre ellos */
+.icon-container {
+    display: flex;
+    justify-content: center; /* Centrar los íconos en el contenedor */
+    gap: 5px; /* Ajustar la distancia entre los íconos */
+    margin: 10px 0; /* Margen superior e inferior para dar algo de espacio general */
+    margin-bottom: 2px;
+}
+
+/* Estilos para los iconos */
+.icon {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    text-align: center;
+    margin-bottom: 2px;
+}
+
+.icon i {
+    font-size: 2em;
+    color: #224525;
+    margin: 10px;
+}
+
+.icon:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Tooltip personalizada */
+.tooltip {
+    visibility: hidden;
+    width: 180px; /* Ajustar el ancho de la tooltip */
+    background-color: #444; /* Color de fondo menos gris */
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%; /* Posicionar sobre el icono */
+    left: 50%;
+    margin-left: -90px; /* Centrar la tooltip */
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 12px;  /* Tamaño de letra más pequeño */
+}
+
+/* Estilos para títulos */
+h1, h2, h3 {
+    color: #2c3e50;
+}
+
+/* Estilos para gráficos */
+.plotly-graph-div {
+    background-color: #f0f8ff;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para la barra lateral */
+.stSidebar {
+    background-color: #C8EAC9;
+}
+
+.stSelectbox:focus {
+    background-color: #a8e6cf !important; /* Color de fondo al hacer clic */
+    border-color: #4CAF50 !important; /* Cambiar el color del borde al hacer clic */
+}
+
+
+

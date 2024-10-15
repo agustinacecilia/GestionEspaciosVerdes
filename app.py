@@ -1,0 +1,452 @@
+import streamlit as st
+import pandas as pd
+import folium
+import seaborn as sns
+import matplotlib.pyplot as plt
+from folium.plugins import HeatMap
+import json
+import geopandas as gpd
+from shapely import wkt
+from streamlit_folium import folium_static
+import plotly.express as px  # Importar plotly express para gráficos interactivos
+from folium.plugins import MarkerCluster
+
+# Cargar los datasets
+@st.cache_data
+def cargar_datos():
+    registro_arboles_df = pd.read_csv('C:/Users/Usuario/Desktop/Datathon/RegistroArboles_actualizado.csv')
+    espacios_verdes_df = pd.read_csv('C:/Users/Usuario/Desktop/Datathon/EspaciosVerdes.csv')
+    puntos_verdes_df = pd.read_csv('C:/Users/Usuario/Desktop/Datathon/PuntosVerdes.csv')
+    mantenimiento_arboles_df = pd.read_csv('C:/Users/Usuario/Desktop/Datathon/MantenimientoArboles.csv')
+    barrios_df = pd.read_csv('C:/Users/Usuario/Desktop/Datathon/Barrios.csv')
+    return registro_arboles_df, espacios_verdes_df, puntos_verdes_df, mantenimiento_arboles_df, barrios_df
+
+# Configuración de la página
+st.set_page_config(page_title="Gestion Corrientes Verde", layout="wide")
+
+# Título principal de la aplicación
+st.title("Gestión Corrientes Verde")
+
+# Agregar una imagen o descripción
+st.markdown(
+    """
+    <style>
+    .title {
+        color: #4CAF50; /* Cambia el color del texto */
+        text-align: center; /* Centra el texto */
+    }
+    </style>
+    <h2 class="title">Análisis y Visualizaciones</h2>
+    """,
+    unsafe_allow_html=True
+)
+
+# Agregar el enlace de fuente al final de la sección
+st.markdown(
+    "[Fuente: Dataset del Portal de Datos Abiertos de Corrientes](https://datos.ciudaddecorrientes.gov.ar/dataset?groups=zoonosis)",
+    unsafe_allow_html=True
+)
+
+# Cargar los datos
+registro_arboles_df, espacios_verdes_df, puntos_verdes_df, mantenimiento_arboles_df, barrios_df = cargar_datos()
+
+# Cargar el archivo CSS
+with open('styles.css') as f:
+    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
+# Incluir Font Awesome
+st.markdown("""
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+""", unsafe_allow_html=True)
+
+# Función para calcular el porcentaje de árboles en mal estado
+def calcular_porcentaje_mal_estado():
+    arboles_mantenimiento_df = pd.merge(
+        registro_arboles_df,
+        mantenimiento_arboles_df,
+        on='id_arbol', 
+        how='left'
+    )
+    # Árboles en estado 'Malo'
+    arboles_malos = arboles_mantenimiento_df[arboles_mantenimiento_df['estado_salud'] == 'Malo']
+    porcentaje_malos = (len(arboles_malos) / len(arboles_mantenimiento_df)) * 100
+    return porcentaje_malos
+
+# Guardar el porcentaje en una variable local para usarla más tarde
+porcentaje_arboles_malos = calcular_porcentaje_mal_estado()
+
+# Crear una función para mostrar los mapas de puntos verdes y espacios verdes
+def mostrar_mapa_puntos_espacios(espacios_verdes_filtrados):
+    centro_mapa = [-27.48, -58.83]
+    mapa = folium.Map(location=centro_mapa, zoom_start=13)
+
+    # Calcular la cantidad de puntos verdes y espacios verdes
+    cantidad_puntos_verdes = puntos_verdes_df.dropna(subset=['lat', 'lng']).shape[0]
+    cantidad_espacios_verdes = espacios_verdes_filtrados.shape[0]
+
+     # Calcular la cantidad de puntos verdes y espacios verdes
+    cantidad_puntos_verdes = puntos_verdes_df.dropna(subset=['lat', 'lng']).shape[0]
+    cantidad_espacios_verdes = espacios_verdes_filtrados.shape[0]
+
+    # Mostrar íconos representativos en la interfaz
+    col1, col2 = st.columns(2)
+
+    # Icono de Punto Verde (Reciclaje) con hover
+    with col1:
+        st.markdown(f"<strong>Puntos Verdes:</strong> ", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div class="icon">
+                <i class="fa-solid fa-recycle fa-2xl" style="color: #4CAF50;"></i>
+                <span class="tooltip">Cantidad de Puntos Verdes: {cantidad_puntos_verdes}</span>
+            </div>
+        """, unsafe_allow_html=True)
+
+    # Icono de Espacio Verde con hover
+    with col2:
+        st.markdown(f"<strong>Espacios Verdes:</strong> ", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div class="icon">
+                <i class="fa-solid fa-tree fa-2xl" style="color: #4CAF50;"></i>
+                <span class="tooltip">Cantidad de Espacios Verdes: {cantidad_espacios_verdes}</span>
+            </div>
+        """, unsafe_allow_html=True)
+
+    # Añadir los puntos verdes
+    for _, fila in puntos_verdes_df.dropna(subset=['lat', 'lng']).iterrows():
+        folium.Marker(
+            location=[fila['lat'], fila['lng']],
+            popup=f"Punto verde: {fila['ubicacion']}",
+            icon=folium.Icon(color='green', icon='leaf')
+        ).add_to(mapa)
+
+    # Añadir los espacios verdes filtrados
+    for _, fila in espacios_verdes_filtrados.iterrows():
+        try:
+            geo_data = json.loads(fila['st_asgeojson'])
+            coords = geo_data['coordinates'][0]
+            folium.Polygon(
+                locations=[(coord[1], coord[0]) for coord in coords],
+                color='blue',
+                fill=True,
+                fill_opacity=0.3,
+                popup=f"Espacio verde: {fila.get('gid', 'Sin nombre')}"
+            ).add_to(mapa)
+        except Exception:
+            continue
+
+    # Mostrar el mapa
+    folium_static(mapa)
+
+# Crear un gráfico de estados de salud de los árboles
+def grafico_estado_salud():
+    st.write("""
+        Los árboles son esenciales para la biodiversidad urbana y la calidad del aire. En esta sección, se analiza el estado de salud de los árboles 
+        de la ciudad de Corrientes, ayudando a identificar áreas que requieren mayor mantenimiento y conservación.
+    """)
+    arboles_mantenimiento_df = pd.merge(
+        registro_arboles_df,
+        mantenimiento_arboles_df,
+        on='id_arbol', 
+        how='left'
+    )
+    
+    # Conteo del estado de salud
+    conteo_estado_salud = arboles_mantenimiento_df['estado_salud'].value_counts().reset_index()
+    conteo_estado_salud.columns = ['Estado de Salud', 'Cantidad']
+
+    # Crear el gráfico de barras interactivo con Plotly Express
+    fig = px.bar(
+        conteo_estado_salud,
+        x='Estado de Salud',
+        y='Cantidad',
+        title='Estado de Salud de los Árboles',
+        color='Estado de Salud',
+        hover_data={'Cantidad': True},
+        labels={'Estado de Salud': 'Estado de Salud', 'Cantidad': 'Número de Árboles'},
+        color_discrete_sequence=px.colors.qualitative.Vivid  # Colores vibrantes
+    )
+
+    # Personalizar la apariencia del gráfico
+    fig.update_layout(
+        xaxis_title='Estado de Salud',
+        yaxis_title='Número de Árboles',
+        plot_bgcolor='rgba(255, 255, 255, 0.9)',  # Fondo claro
+        paper_bgcolor='rgba(245, 245, 245, 1)',  # Fondo del gráfico
+        hoverlabel=dict(
+            bgcolor='rgba(255, 255, 255, 1)',  # Fondo blanco del hover
+            bordercolor='rgba(76, 175, 80, 1)',  # Borde verde
+            font=dict(color='#333', size=14)  # Color y tamaño del texto
+        ),
+        height=600,  # Ajustar la altura del gráfico
+    )
+    # Actualizar las etiquetas de hover
+    fig.update_traces(
+        hovertemplate='<b>Estado de Salud:</b> %{x}<br><b>Cantidad de Árboles:</b> %{y}<extra></extra>'
+    )
+    # Mostrar el gráfico en Streamlit
+    st.plotly_chart(fig)
+
+     # Mostrar el porcentaje de árboles que requieren mantenimiento usando la variable local
+    st.write(f"**Porcentaje de árboles que necesitan mantenimiento**: {porcentaje_arboles_malos:.2f}%")
+
+    # Parte adicional: Gráfico de mantenimientos realizados por año
+    st.subheader("Mantenimientos realizados por año")
+
+    # Asegurarse de que la columna 'fecha_mantenimiento' esté en formato de fecha
+    mantenimiento_arboles_df['prox_fecha_mante'] = pd.to_datetime(mantenimiento_arboles_df['prox_fecha_mante'], errors='coerce')
+
+    # Extraer el año del mantenimiento
+    mantenimiento_arboles_df['año_mantenimiento'] = mantenimiento_arboles_df['prox_fecha_mante'].dt.year
+
+    # Filtrar años válidos
+    primer_año = mantenimiento_arboles_df['año_mantenimiento'].min()
+    ultimo_año = mantenimiento_arboles_df['año_mantenimiento'].max()
+    mantenimientos_por_año = mantenimiento_arboles_df[mantenimiento_arboles_df['año_mantenimiento'].between(primer_año, ultimo_año)]
+
+    # Contar el número de mantenimientos por año
+    mantenimientos_por_año = mantenimientos_por_año.groupby('año_mantenimiento').size().reset_index(name='cantidad_mantenimientos')
+
+    # Crear el gráfico de línea para mostrar los mantenimientos a través de los años
+    fig_mantenimientos = px.line(
+        mantenimientos_por_año,
+        x='año_mantenimiento',
+        y='cantidad_mantenimientos',
+        title='Frecuencia de Mantenimientos de Árboles desde el año 2023',
+        labels={'año_mantenimiento': 'Año', 'cantidad_mantenimientos': 'Cantidad de Mantenimientos'},
+        markers=True,
+        color_discrete_sequence=px.colors.qualitative.Vivid  # Colores vibrantes
+    )
+
+    # Personalizar el gráfico
+    fig_mantenimientos.update_layout(
+        xaxis_title='Año',
+        yaxis_title='Cantidad de Mantenimientos',
+        plot_bgcolor='rgba(255, 255, 255, 0.9)',  # Fondo claro
+        paper_bgcolor='rgba(245, 245, 245, 1)',  # Fondo del gráfico
+        hoverlabel=dict(
+            bgcolor='rgba(255, 255, 255, 1)',  # Fondo blanco del hover
+            bordercolor='rgba(76, 175, 80, 1)',  # Borde verde
+            font=dict(color='#333', size=14)  # Color y tamaño del texto
+        ),
+        height=400,
+    )
+    # Actualizar las etiquetas de hover
+    fig_mantenimientos.update_traces(
+        hovertemplate='<b>Año:</b> %{x}<br><b>Cantidad de Mantenimientos:</b> %{y}<extra></extra>'
+    )
+    
+    # Mostrar el gráfico de mantenimientos en Streamlit
+    st.plotly_chart(fig_mantenimientos)
+
+
+# Crear una función para mostrar el mapa de árboles mediante un mapa de calor, la cantidad total y especies
+# Mapa de calor de árboles
+def mostrar_mapa_calor_arboles():
+    centro_mapa = [-27.48, -58.83]
+    heatmap = folium.Map(location=centro_mapa, zoom_start=13)
+    
+    # Datos para el HeatMap
+    heat_data = [[row['lat'], row['lng']] for index, row in registro_arboles_df.dropna(subset=['lat', 'lng']).iterrows()]
+    HeatMap(heat_data).add_to(heatmap)
+
+    # Mostrar el mapa
+    folium_static(heatmap)
+
+    # Calcular la cantidad total de árboles
+    cantidad_arboles = registro_arboles_df.dropna(subset=['lat', 'lng']).shape[0]
+
+    # Calcular la cantidad de especies de árboles y sus nombres
+    especies_conteo = registro_arboles_df['especie'].value_counts()
+    cantidad_especies = especies_conteo.shape[0]
+
+    # Mostrar la cantidad total de árboles
+    st.write(f"**Cantidad total de árboles**: {cantidad_arboles}")
+
+    # Mostrar la cantidad total de especies de árboles
+    st.write(f"**Cantidad total de especies de árboles**: {cantidad_especies}")
+
+     # Mostrar un gráfico de líneas de la cantidad de árboles por especie
+    conteo_especies = especies_conteo.reset_index()
+    conteo_especies.columns = ['Especie', 'Cantidad']
+
+      # Crear el gráfico de barras horizontales
+    fig = px.bar(
+        conteo_especies,
+         x='Cantidad',
+    y='Especie',
+    orientation='h',  # Cambiar a orientación horizontal
+        title='Cantidad de Árboles por Especie',
+        hover_data={'Especie': True, 'Cantidad': True},
+        color='Especie',
+    color_discrete_sequence=px.colors.qualitative.Vivid
+    )
+
+    fig.update_traces(
+    hovertemplate='<b>Especie:</b> %{y}<br><b>Cantidad:</b> %{x}<extra></extra>'
+) 
+
+    # Personalizar el layout del gráfico
+    fig.update_layout(
+        xaxis_title='Cantidad',
+        yaxis_title='Especie',
+        xaxis_tickangle=-90,  # Rotar etiquetas para mejor visualización
+        plot_bgcolor='rgba(255, 255, 255, 0.9)',  # Fondo claro
+        paper_bgcolor='rgba(245, 245, 245, 1)',  # Fondo del gráfico
+        hoverlabel=dict(
+            bgcolor='rgba(255, 255, 255, 1)',  # Fondo blanco del hover
+            bordercolor='rgba(76, 175, 80, 1)',  # Borde verde
+            font=dict(color='#333', size=14)  # Color del texto y tamaño
+        ),
+        height=900,  # Ajustar el alto del gráfico
+    width=1200,  # Ajustar el ancho del gráfico
+    margin=dict(l=40, r=40, t=40, b=200),  # Ajustar los márgenes
+    yaxis=dict(tickmode='linear', dtick=1,  automargin=True),  # Ajustar el espaciado de las etiquetas en el eje Y
+    hovermode="y"  # Mostrar hover interactivo en el eje Y
+    )
+
+    fig.update_yaxes(tickfont=dict(size=9))  # Ajustar el tamaño de fuente de las etiquetas
+    # Mostrar el gráfico en Streamlit
+    st.plotly_chart(fig)
+
+# Función para mostrar un gráfico de torta con el porcentaje de espacios verdes por barrio
+def mostrar_grafico_espacios_barrios():
+    # Contar el número de espacios verdes por barrio
+    espacios_verdes_por_barrio = espacios_verdes_df.groupby('id_barrios').size().reset_index(name='cantidad_espacios_verdes')
+
+    # Combinar los datos de barrios y espacios verdes
+    barrios_con_datos = barrios_df.merge(espacios_verdes_por_barrio, left_on='id_barrios', right_on='id_barrios', how='left').fillna(0)
+
+    # Calcular el total de espacios verdes
+    total_espacios_verdes = barrios_con_datos['cantidad_espacios_verdes'].sum()
+
+    # Calcular el porcentaje de espacios verdes por barrio
+    barrios_con_datos['porcentaje_espacios_verdes'] = (barrios_con_datos['cantidad_espacios_verdes'] / total_espacios_verdes) * 100
+
+    # Crear gráfico de torta
+    fig = px.pie(
+        barrios_con_datos, 
+        names='nombre_barrio', 
+        values='porcentaje_espacios_verdes',
+        title='Porcentaje de Espacios Verdes por Barrio',
+        hole=0.3,
+        width=800,  # Ajustar ancho del gráfico
+        height=600,  # Ajustar alto del gráfico
+    )
+
+    # Personalizar el layout para incluir fondo
+    fig.update_layout(
+        plot_bgcolor='rgba(255, 255, 255, 0.9)',  # Fondo de la gráfica
+        paper_bgcolor='rgba(255, 255, 255, 0.9)',  # Fondo del papel (área exterior)
+    )
+
+    # Actualizar el gráfico para eliminar los porcentajes fuera de la torta y sus líneas
+    fig.update_traces(
+        textposition='inside',     # Coloca el texto dentro de la porción del gráfico
+        pull=[0]*len(barrios_con_datos),  # Asegura que no haya "pull" (líneas externas)
+        hovertemplate='<b>Nombre del Barrio:</b> %{label}<br><b>Porcentaje de Espacios Verdes:</b> %{percent:.2%}<extra></extra>',  # Formato del hover
+        hoverlabel=dict(
+            bgcolor='rgba(255, 255, 255, 1)',  # Fondo blanco
+            bordercolor='rgba(76, 175, 80, 1)',  # Borde verde
+            font=dict(color='#333')  # Texto en color gris oscuro
+        )
+    )
+
+    # Calcular la cantidad de barrios
+    cantidad_barrios = len(barrios_con_datos)
+
+    # Mostrar el texto de la cantidad de barrios en Streamlit
+    st.markdown(f"**Cantidad de barrios:** {cantidad_barrios}")
+
+    # Mostrar el gráfico en Streamlit
+    st.plotly_chart(fig)
+
+    st.markdown("""
+## Conclusiones y Recomendaciones:
+- **Mantenimiento Prioritario**: Es esencial priorizar el mantenimiento de los árboles en mal estado.
+- **Ampliación de Puntos Verdes**: Aumentar los puntos verdes para mejorar el acceso de los ciudadanos y fomentar el reciclaje en más barrios.
+- **Plan de Expansión de Espacios Verdes**: Los barrios con menos espacios verdes deben ser priorizados en la planificación urbana para reducir el déficit de áreas verdes.
+""")
+
+# Nueva función para filtrar espacios verdes por clasificación
+def filtrar_espacios_verdes(clasificacion):
+    if clasificacion and clasificacion != "TODOS":
+        return espacios_verdes_df[espacios_verdes_df['clasificacion'] == clasificacion]
+    return espacios_verdes_df
+
+# Nueva función para mostrar la gráfica de espacios verdes como gráfica de torta
+def mostrar_grafica_espacios_verdes(espacios_verdes_filtrados):
+    if clasificacion_espacio == "TODOS":
+        conteo_por_clasificacion = espacios_verdes_filtrados['clasificacion'].value_counts().reset_index()
+        conteo_por_clasificacion.columns = ['Clasificación', 'Cantidad']
+
+        # Crear gráfica de torta interactiva
+        fig = px.pie(
+            conteo_por_clasificacion,
+            values='Cantidad',
+            names='Clasificación',
+            title='Cantidad de Espacios Verdes por Clasificación',
+            hover_data=['Cantidad'],
+            color_discrete_sequence=['#a8e6cf', '#ffcc5c', '#ffab91', '#ff9ebc', '#a7d3f5', '#d7aefb', '#b2f2b2']
+        )
+
+        # Personalizar el layout para incluir fondo
+        fig.update_layout(
+             plot_bgcolor='rgba(255, 255, 255, 0.9)',  # Fondo de la gráfica
+             paper_bgcolor='rgba(255, 255, 255, 0.9)',  # Fondo del papel (área exterior)
+         )
+
+        
+        fig.update_traces(
+            hoverlabel=dict(
+                bgcolor='rgba(255, 255, 255, 1)',  # Color de fondo blanco
+                bordercolor='rgba(76, 175, 80, 1)',  # Color del borde
+                font=dict(color='#333')  # Color del texto
+            ),
+            hovertemplate='<b>Clasificación:</b> %{label}<br><b>Cantidad:</b> %{value}<extra></extra>'  # Formato del tooltip con negrita
+        )
+        # Mostrar gráfica
+        st.plotly_chart(fig)
+
+# Sidebar para navegación
+st.sidebar.title("Opciones de visualización")
+opcion = st.sidebar.selectbox(
+    "Selecciona una visualización:",
+    ["Puntos y Espacios Verdes", "Árboles y Especies", "Estado de Salud de Árboles", "Espacios Verdes en Barrios"]
+)
+
+# Mostrar las visualizaciones según la opción seleccionada
+if opcion == "Puntos y Espacios Verdes":
+    st.subheader("Mapa e info de Puntos Verdes y Espacios Verdes en la ciudad de Corrientes")
+    st.write("""
+        Los **Puntos Verdes** son lugares habilitados para la correcta disposición de residuos reciclables, 
+        contribuyendo a la concientización ambiental y al cuidado de nuestros **espacios verdes.** 
+        Al reciclar y hacer uso de estos puntos, ayudamos a mantener nuestras áreas verdes más limpias y saludables.
+    """)
+    
+    # Nueva opción en la barra lateral para filtrar espacios verdes (solo para Puntos y Espacios Verdes)
+    clasificacion_espacio = st.sidebar.selectbox(
+        "Selecciona la clasificación de espacios verdes:",
+        ["TODOS"] + list(espacios_verdes_df['clasificacion'].dropna().unique())  # Filtramos los NaN
+    )
+    # Filtrar los espacios verdes según la clasificación seleccionada
+    espacios_verdes_filtrados = filtrar_espacios_verdes(clasificacion_espacio)
+    # Mostrar el mapa de puntos y espacios verdes filtrados
+    mostrar_mapa_puntos_espacios(espacios_verdes_filtrados)
+    # Mostrar la gráfica de espacios verdes según clasificación
+    mostrar_grafica_espacios_verdes(espacios_verdes_filtrados)
+
+elif opcion == "Árboles y Especies":
+    st.subheader("Mapa de calor Árboles")
+    st.write("""
+        Se muestra un **Mapa de Calor** de los árboles en la ciudad de Corrientes. 
+        En este mapa, es posible observar la densidad de árboles en las diferentes áreas de la ciudad.
+        Notablemente, se puede ver que la ciudad está densamente poblada con árboles, especialmente en ciertas zonas 
+        donde la concentración es más alta.
+    """)
+    mostrar_mapa_calor_arboles()
+elif opcion == "Estado de Salud de Árboles":
+    st.subheader("Gráfico del Estado de Salud de los Árboles")
+    grafico_estado_salud()
+elif opcion == "Espacios Verdes en Barrios":
+    st.subheader("Gráfico de Espacios Verdes en los Barrios de la Ciudad")
+    mostrar_grafico_espacios_barrios()
