@@ -273,7 +273,12 @@ def mostrar_mapa_calor_arboles():
         title='Cantidad de Árboles por Especie',
         hover_data={'Especie': True, 'Cantidad': True},
         color='Especie',
-    color_discrete_sequence=px.colors.qualitative.Vivid
+    color_discrete_sequence=[
+                 px.colors.qualitative.Alphabet[6],
+                 px.colors.qualitative.Alphabet[11],
+               px.colors.qualitative.Plotly[2],
+                 px.colors.qualitative.Plotly[7],
+               px.colors.qualitative.G10[5]],
     )
 
     fig.update_traces(
