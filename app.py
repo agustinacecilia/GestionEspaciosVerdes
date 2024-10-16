@@ -374,30 +374,48 @@ def mostrar_grafica_espacios_verdes(espacios_verdes_filtrados):
         conteo_por_clasificacion = espacios_verdes_filtrados['clasificacion'].value_counts().reset_index()
         conteo_por_clasificacion.columns = ['Clasificación', 'Cantidad']
 
-        # Crear gráfica de torta interactiva
+         # Crear gráfica de dona interactiva
         fig = px.pie(
             conteo_por_clasificacion,
             values='Cantidad',
             names='Clasificación',
             title='Cantidad de Espacios Verdes por Clasificación',
             hover_data=['Cantidad'],
-            color_discrete_sequence=['#a8e6cf', '#ffcc5c', '#ffab91', '#ff9ebc', '#a7d3f5', '#d7aefb', '#b2f2b2']
+            color_discrete_sequence=['#a8e6cf', '#ffcc5c', '#ffab91', '#ff9ebc', '#a7d3f5', '#d7aefb', '#b2f2b2'],
         )
 
         # Personalizar el layout para incluir fondo
         fig.update_layout(
-             plot_bgcolor='rgba(255, 255, 255, 0.9)',  # Fondo de la gráfica
-             paper_bgcolor='rgba(255, 255, 255, 0.9)',  # Fondo del papel (área exterior)
+            plot_bgcolor='rgba(255, 255, 255, 0.9)',  # Fondo de la gráfica
+            paper_bgcolor='rgba(255, 255, 255, 0.9)',  # Fondo del papel (área exterior)
+            height=600,  # Ajustar la altura de la gráfica
+            width=700,   # Ajustar el ancho de la gráfica
+            showlegend=True,  # Mostrar leyenda
+            legend=dict(
+                orientation="v",  # Leyenda en vertical
+                yanchor="top",
+                y=1.02,  # Colocar la leyenda bien arriba
+                xanchor="left",
+                x=1.1  # Colocar la leyenda a la derecha de la gráfica
+            ),
          )
 
-        
+         # Actualizar los trazos para mostrar etiquetas fuera de las porciones
         fig.update_traces(
+            textinfo='percent+label',  # Mostrar tanto porcentaje como la etiqueta de la categoría
+            textposition='outside',  # Colocar las etiquetas fuera de las porciones
+            insidetextorientation='horizontal',  # Orientación radial para el texto
             hoverlabel=dict(
                 bgcolor='rgba(255, 255, 255, 1)',  # Color de fondo blanco
                 bordercolor='rgba(76, 175, 80, 1)',  # Color del borde
                 font=dict(color='#333')  # Color del texto
             ),
-            hovertemplate='<b>Clasificación:</b> %{label}<br><b>Cantidad:</b> %{value}<extra></extra>'  # Formato del tooltip con negrita
+            
+        )
+        # Efecto hover: usando hovertemplate para personalizar el contenido al pasar el cursor
+        fig.update_traces(
+            hovertemplate='<b>Clasificación:</b> %{label}<br><b>Cantidad:</b> %{value}<br>',
+            hoverlabel=dict(bgcolor='white', font_size=16),
         )
         # Mostrar gráfica
         st.plotly_chart(fig)
@@ -453,6 +471,6 @@ st.markdown("""
             <a href="https://datos.ciudaddecorrientes.gov.ar/dataset?groups=zoonosis" target="_blank">Fuente: Dataset del Portal de Datos Abiertos de Corrientes</a>
         </p>
         <hr>
-        <p>Copyright © 2024 Desarrollado por Leguiza Agustina</p>
+        <p>© 2024 Desarrollado por Leguiza Agustina</p>
     </div>
 """, unsafe_allow_html=True)
