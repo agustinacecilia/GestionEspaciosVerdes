@@ -62,8 +62,10 @@ def calcular_porcentaje_mal_estado():
         on='id_arbol', 
         how='left'
     )
-    # Árboles en estado 'Malo'
-    arboles_malos = arboles_mantenimiento_df[arboles_mantenimiento_df['estado_salud'] == 'Malo']
+    # Árboles en estado 'Malo' y 'Regular'
+    arboles_malos = arboles_mantenimiento_df[
+        arboles_mantenimiento_df['estado_salud'].isin(['Malo', 'Regular'])
+    ]
     porcentaje_malos = (len(arboles_malos) / len(arboles_mantenimiento_df)) * 100
     return porcentaje_malos
 
@@ -135,9 +137,12 @@ def mostrar_mapa_puntos_espacios(espacios_verdes_filtrados):
 # Crear un gráfico de estados de salud de los árboles
 def grafico_estado_salud():
     st.write("""
-        Los árboles son esenciales para la biodiversidad urbana y la calidad del aire. En esta sección, se analiza el estado de salud de los árboles 
-        de la ciudad de Corrientes, ayudando a identificar áreas que requieren mayor mantenimiento y conservación.
+        Los árboles son esenciales para la salud de nuestra ciudad como la calidad del aire y así también para el bienestar de los ciudadanos.
+        En esta sección, se analiza el estado de salud de los árboles de la ciudad de Corrientes, 
+        ayudando a identificar áreas que requieren mayor mantenimiento para su conservación, asegurando que nuestros árboles 
+        sigan beneficiando a la comunidad y al medio ambiente.
     """)
+    
     arboles_mantenimiento_df = pd.merge(
         registro_arboles_df,
         mantenimiento_arboles_df,
@@ -159,10 +164,11 @@ def grafico_estado_salud():
         hover_data={'Cantidad': True},
         labels={'Estado de Salud': 'Estado de Salud', 'Cantidad': 'Número de Árboles'},
         color_discrete_sequence=[
-                 px.colors.qualitative.Alphabet[9],
-                 px.colors.qualitative.Alphabet[15],
-               px.colors.qualitative.Plotly[6],
-                 px.colors.qualitative.Plotly[1]],
+            px.colors.qualitative.Alphabet[9],
+            px.colors.qualitative.Alphabet[15],
+            px.colors.qualitative.Plotly[6],
+            px.colors.qualitative.Plotly[1]
+        ],
     )
 
     # Personalizar la apariencia del gráfico
@@ -178,15 +184,65 @@ def grafico_estado_salud():
         ),
         height=600,  # Ajustar la altura del gráfico
     )
+    
     # Actualizar las etiquetas de hover
     fig.update_traces(
         hovertemplate='<b>Estado de Salud:</b> %{x}<br><b>Cantidad de Árboles:</b> %{y}<extra></extra>'
     )
+    
     # Mostrar el gráfico en Streamlit
     st.plotly_chart(fig)
 
-     # Mostrar el porcentaje de árboles que requieren mantenimiento usando la variable local
+    # Mostrar el porcentaje de árboles que requieren mantenimiento
+    porcentaje_arboles_malos = calcular_porcentaje_mal_estado()  # Asegúrate de que esta función esté definida
     st.write(f"**Porcentaje de árboles que necesitan mantenimiento**: {porcentaje_arboles_malos:.2f}%")
+
+    # Crear gráfico de dona para el porcentaje de árboles que requieren mantenimiento
+    estado_mantenimiento = ['Malo', 'Regular', 'No Requiere Mantenimiento']
+    cantidades = [
+        len(arboles_mantenimiento_df[arboles_mantenimiento_df['estado_salud'] == 'Malo']),
+        len(arboles_mantenimiento_df[arboles_mantenimiento_df['estado_salud'] == 'Regular']),
+        len(arboles_mantenimiento_df) - len(arboles_mantenimiento_df[arboles_mantenimiento_df['estado_salud'].isin(['Malo', 'Regular'])])
+    ]
+
+    fig_dona = px.pie(
+        names=estado_mantenimiento,
+        values=cantidades,
+        hole=0.6,  # Hacer una dona
+        color_discrete_sequence=[
+            px.colors.qualitative.Prism[3],
+            px.colors.qualitative.Plotly[6],
+            px.colors.qualitative.Plotly[1]  # Puedes cambiar este color si es necesario
+        ],  # Colores personalizados para malo, regular y no requiere mantenimiento
+    )
+
+    # Personalizar la apariencia del gráfico de dona
+    fig_dona.update_traces(
+        hovertemplate='<b>Tipo de Mantenimiento:</b> %{label}<br><b><extra></extra>',
+        textposition='inside',  # Asegurar que el texto esté dentro de las porciones
+        insidetextorientation='radial',  # Forzar que el texto esté dentro de la porción
+        textfont_size=12,  # Ajustar el tamaño del texto
+        textfont_color='white',  # Forzar que el color del texto sea blanco en todas las porciones
+        insidetextfont=dict(size=12, color='white')
+)
+
+    # Personalizar el layout del gráfico
+    fig_dona.update_layout(
+        showlegend=False,  # Quitar la leyenda
+        margin=dict(l=0, r=0, t=0, b=0),  # Márgenes pequeños para hacerla compacta
+        height=250,  # Ajustar el alto
+        width=250,   # Ajustar el ancho
+        plot_bgcolor='rgba(0, 0, 0, 0)',  # Fondo transparente
+        paper_bgcolor='rgba(0, 0, 0, 0)',  # Fondo transparente
+        hoverlabel=dict(
+            bgcolor='rgba(255, 255, 255, 1)',  # Fondo blanco del hover
+            bordercolor='rgba(76, 175, 80, 1)',  # Borde verde
+            font=dict(color='#333', size=14)  # Color del texto y tamaño
+        )
+    )
+
+    # Mostrar la gráfica de dona justo debajo del texto
+    st.plotly_chart(fig_dona, use_container_width=True)
 
     # Parte adicional: Gráfico de mantenimientos realizados por año
     st.subheader("Mantenimientos realizados por año")
@@ -229,6 +285,7 @@ def grafico_estado_salud():
         ),
         height=400,
     )
+
     # Actualizar las etiquetas de hover
     fig_mantenimientos.update_traces(
         hovertemplate='<b>Año:</b> %{x}<br><b>Cantidad de Mantenimientos:</b> %{y}<extra></extra>'
@@ -277,55 +334,57 @@ def mostrar_mapa_calor_arboles():
     # Mostrar la cantidad total de especies de árboles
     st.write(f"**Cantidad total de especies de árboles**: {cantidad_especies}")
 
-     # Mostrar un gráfico de líneas de la cantidad de árboles por especie
+    # Mostrar un gráfico de líneas de la cantidad de árboles por especie
     conteo_especies = especies_conteo.reset_index()
     conteo_especies.columns = ['Especie', 'Cantidad']
 
-      # Crear el gráfico de barras horizontales
+    # Crear el gráfico de barras horizontales para especies de arboles
     fig = px.bar(
-        conteo_especies,
-         x='Cantidad',
+    conteo_especies,
+    x='Cantidad',
     y='Especie',
-    orientation='h',  # Cambiar a orientación horizontal
-        title='Cantidad de Árboles por Especie',
-        hover_data={'Especie': True, 'Cantidad': True},
-        color='Especie',
+    orientation='h',  # Cambia a orientación horizontal
+    title='Cantidad de Árboles por Especie',
+    color='Especie',  # Mantener la leyenda de colores
     color_discrete_sequence=[
-                 px.colors.qualitative.Alphabet[6],
-                 px.colors.qualitative.Alphabet[0],
-                 px.colors.qualitative.Alphabet[11],
-                 px.colors.qualitative.Dark2[0],
-                 px.colors.qualitative.Alphabet[20],
-                 px.colors.qualitative.Plotly[2],
-                 px.colors.qualitative.Plotly[7],
-                 px.colors.qualitative.Plotly[3],
-                 px.colors.qualitative.G10[5]],
+        px.colors.qualitative.Alphabet[6],
+        px.colors.qualitative.Alphabet[0],
+        px.colors.qualitative.Alphabet[11],
+        px.colors.qualitative.Dark2[0],
+        px.colors.qualitative.Alphabet[20],
+        px.colors.qualitative.Plotly[2],
+        px.colors.qualitative.Plotly[7],
+        px.colors.qualitative.Plotly[3],
+        px.colors.qualitative.G10[5]
+        ],
     )
 
+    # Actualizar los trazos para desactivar la etiqueta predeterminada y mostrar solo la personalizada
     fig.update_traces(
-    hovertemplate='<b>Especie:</b> %{y}<br><b>Cantidad:</b> %{x}<extra></extra>'
-) 
+    hovertemplate='<b>Cantidad:</b> %{x}<extra></extra>',
+    showlegend=True  # Mantener la leyenda
+    )
 
     # Personalizar el layout del gráfico
     fig.update_layout(
-        xaxis_title='Cantidad',
-        yaxis_title='Especie',
-        xaxis_tickangle=-90,  # Rotar etiquetas para mejor visualización
-        plot_bgcolor='rgba(255, 255, 255, 0.9)',  # Fondo claro
-        paper_bgcolor='rgba(245, 245, 245, 1)',  # Fondo del gráfico
-        hoverlabel=dict(
-            bgcolor='rgba(255, 255, 255, 1)',  # Fondo blanco del hover
-            bordercolor='rgba(76, 175, 80, 1)',  # Borde verde
-            font=dict(color='#333', size=14)  # Color del texto y tamaño
-        ),
-        height=900,  # Ajustar el alto del gráfico
+    xaxis_title='Cantidad',
+    yaxis_title='Especie',
+    plot_bgcolor='rgba(255, 255, 255, 0.9)',  # Fondo claro
+    paper_bgcolor='rgba(245, 245, 245, 1)',  # Fondo del gráfico
+    hoverlabel=dict(
+        bgcolor='rgba(255, 255, 255, 1)',  # Fondo blanco del hover
+        bordercolor='rgba(76, 175, 80, 1)',  # Borde verde
+        font=dict(color='#333', size=14)  # Color del texto y tamaño
+    ),
+    height=900,  # Ajustar el alto del gráfico
     width=1200,  # Ajustar el ancho del gráfico
     margin=dict(l=40, r=40, t=40, b=200),  # Ajustar los márgenes
-    yaxis=dict(tickmode='linear', dtick=1,  automargin=True),  # Ajustar el espaciado de las etiquetas en el eje Y
+    yaxis=dict(tickmode='linear', dtick=1, automargin=True),  # Ajustar el espaciado de las etiquetas en el eje Y
     hovermode="y"  # Mostrar hover interactivo en el eje Y
-    )
+)
 
     fig.update_yaxes(tickfont=dict(size=9))  # Ajustar el tamaño de fuente de las etiquetas
+
     # Mostrar el gráfico en Streamlit
     st.plotly_chart(fig)
 
@@ -355,8 +414,54 @@ def mostrar_mapa_calor_arboles():
 
     # Mostrar la cantidad y el porcentaje de especies nativas
     st.write(f"**Cantidad de especies nativas**: {cantidad_especies_nativas}")
-    st.write(f"**Porcentaje de especies nativas**: {porcentaje_especies_nativas:.2f}%")
 
+    # Calcular el porcentaje de especies no nativas
+    porcentaje_no_nativas = 100 - porcentaje_especies_nativas
+
+    # Crear un DataFrame para la gráfica de dona
+    data_porcentaje = pd.DataFrame({
+    'Tipo de Especies': ['Nativas', 'No Nativas'],
+    'Porcentaje': [porcentaje_especies_nativas, porcentaje_no_nativas]
+    })
+
+    # Crear el gráfico de dona para el porcentaje de especies nativas
+    fig_dona_porcentaje = px.pie(
+    data_porcentaje,
+    values='Porcentaje',
+    names='Tipo de Especies',
+    hole=0.6,  # Hacer una dona
+    color_discrete_sequence=[
+                 px.colors.qualitative.Alphabet[0],
+                 px.colors.qualitative.Alphabet[20]],  # Colores personalizados para nativas y no nativas
+    )
+    
+    fig_dona_porcentaje.update_traces(
+    hovertemplate='<b>Tipo de especie:</b> %{label}<br><b><extra></extra>'
+    )
+
+
+    # Personalizar el layout del gráfico
+    fig_dona_porcentaje.update_layout(
+    showlegend=False,  # Quitar la leyenda
+    margin=dict(l=0, r=0, t=0, b=0),  # Márgenes pequeños para hacerla compacta
+    height=200,  # Ajustar el alto
+    width=200,   # Ajustar el ancho
+    plot_bgcolor='rgba(0, 0, 0, 0)',  # Fondo transparente
+    paper_bgcolor='rgba(0, 0, 0, 0)',  # Fondo transparente
+    hoverlabel=dict(
+         bgcolor='rgba(255, 255, 255, 1)',  # Fondo blanco del hover
+         bordercolor='rgba(76, 175, 80, 1)',  # Borde verde
+         font=dict(color='#333', size=14)  # Color del texto y tamaño
+    ))
+
+    # Crear columnas para alinear texto y gráfico de dona
+    col1, col2 = st.columns([0.5, 1.2])  # Ajustar el tamaño de las columnas
+
+    # Mostrar el porcentaje de especies nativas
+    st.write(f"**Porcentaje de especies nativas**: ")
+
+    # Mostrar la gráfica de dona justo debajo del texto
+    st.plotly_chart(fig_dona_porcentaje, use_container_width=True)
 
 # Función para mostrar un gráfico de torta con el porcentaje de espacios verdes por barrio
 def mostrar_grafico_espacios_barrios():
@@ -380,7 +485,7 @@ def mostrar_grafico_espacios_barrios():
 
     # Combinar colores de ambas paletas
     combinar_paletas = set3_color + pastel_color + set2_color + pastel2_color + set3_color + pastel_color + set2_color + pastel2_color # Esto combina ambas listas
-    # Crear gráfico de torta
+    # Crear gráfico de dona
     fig = px.pie(
         barrios_con_datos, 
         names='nombre_barrio', 
@@ -401,6 +506,7 @@ def mostrar_grafico_espacios_barrios():
     # Actualizar el gráfico para eliminar los porcentajes fuera de la torta y sus líneas
     fig.update_traces(
         textposition='inside',     # Coloca el texto dentro de la porción del gráfico
+        showlegend=True,  # Asegura que la leyenda esté activa
         pull=[0]*len(barrios_con_datos),  # Asegura que no haya "pull" (líneas externas)
         hovertemplate='<b>Nombre del Barrio:</b> %{label}<br><b>Porcentaje de Espacios Verdes:</b> %{percent:.2%}<extra></extra>',  # Formato del hover
         hoverlabel=dict(
@@ -421,9 +527,12 @@ def mostrar_grafico_espacios_barrios():
 
     st.markdown("""
 ## Conclusiones y Recomendaciones:
-- **Mantenimiento Prioritario**: Es esencial priorizar el mantenimiento de los árboles en mal estado.
-- **Ampliación de Puntos Verdes**: Aumentar los puntos verdes para mejorar el acceso de los ciudadanos y fomentar el reciclaje en más barrios.
-- **Plan de Expansión de Espacios Verdes**: Los barrios con menos espacios verdes deben ser priorizados en la planificación urbana para reducir el déficit de áreas verdes.
+- **Árboles en la ciudad**: Se puede observar que la ciudad esta casi en su totalidad poblada de árboles y con variadas especies, con un porcentaje alto en buen estado.
+- **Mantenimiento prioritario**: Es esencial priorizar el mantenimiento de los árboles en mal estado ya que el porcentaje es menor.
+- **Puntos verdes en la ciudad**: Análisis de buena distribución de los puntos verdes en distintas ubicaciones.
+- **Ampliación de puntos verdes**: Aumentar los puntos verdes para mejorar el acceso de los ciudadanos y fomentar el reciclaje en más barrios.
+- **Espacios verdes en la ciudad**: Mediante este análisis es notable la cantidad de espacios verdes y sus distintas clasificaciones como plazas, palozeta, costanera, paseo, playa, espacio deportivo.
+- **Plan de expansión de espacios verdes**: Los barrios con menos espacios verdes deben ser priorizados en la planificación urbana para reducir el déficit de áreas verdes.
 """)
 
 # Nueva función para filtrar espacios verdes por clasificación
@@ -438,58 +547,46 @@ def mostrar_grafica_espacios_verdes(espacios_verdes_filtrados):
         conteo_por_clasificacion = espacios_verdes_filtrados['clasificacion'].value_counts().reset_index()
         conteo_por_clasificacion.columns = ['Clasificación', 'Cantidad']
 
-         # Crear gráfica de dona interactiva
-        fig = px.pie(
+         # Crear gráfica de barras verticales interactiva
+        fig = px.bar(
             conteo_por_clasificacion,
-            values='Cantidad',
-            names='Clasificación',
+            x='Clasificación',
+            y='Cantidad',
             title='Cantidad de Espacios Verdes por Clasificación',
-            hover_data=['Cantidad'],
+            color='Clasificación',  # Color por clasificación
             color_discrete_sequence=[
-                px.colors.qualitative.Pastel[0],  
-                px.colors.qualitative.Pastel[1], 
-                px.colors.qualitative.Pastel[2],    
                 px.colors.qualitative.Pastel[3],  
-                px.colors.qualitative.Pastel[4],       
-                px.colors.qualitative.Pastel[5],       
-                px.colors.qualitative.Pastel[6],
-]
+                px.colors.qualitative.Pastel[4], 
+                px.colors.qualitative.Pastel[5],    
+                px.colors.qualitative.Pastel[1],  
+                px.colors.qualitative.Pastel[7],       
+                px.colors.qualitative.Pastel[8],       
+                px.colors.qualitative.Pastel[9],
+            ]
         )
 
-        # Personalizar el layout para incluir fondo
+       # Personalizar el layout para la gráfica de barras
         fig.update_layout(
             plot_bgcolor='rgba(255, 255, 255, 0.9)',  # Fondo de la gráfica
             paper_bgcolor='rgba(255, 255, 255, 0.9)',  # Fondo del papel (área exterior)
             height=600,  # Ajustar la altura de la gráfica
             width=700,   # Ajustar el ancho de la gráfica
-            showlegend=True,  # Mostrar leyenda
-            legend=dict(
-                orientation="v",  # Leyenda en vertical
-                yanchor="top",
-                y=1.02,  # Colocar la leyenda bien arriba
-                xanchor="left",
-                x=1.1  # Colocar la leyenda a la derecha de la gráfica
-            ),
-         )
+            showlegend=False,  # Ocultar leyenda para barras
+            margin=dict(l=40, r=40, t=40, b=80),  # Ajustar márgenes
+        )
 
-         # Actualizar los trazos para mostrar etiquetas fuera de las porciones
+        # Personalizar los trazos y las etiquetas de hover
         fig.update_traces(
-            textinfo='percent+label',  # Mostrar tanto porcentaje como la etiqueta de la categoría
-            textposition='outside',  # Colocar las etiquetas fuera de las porciones
-            insidetextorientation='horizontal',  # Orientación radial para el texto
+            hovertemplate='<b>Clasificación:</b> %{x}<br><b>Cantidad:</b> %{y}<extra></extra>',  # Extra elimina el color al lado del hover
             hoverlabel=dict(
-                bgcolor='rgba(255, 255, 255, 1)',  # Color de fondo blanco
-                bordercolor='rgba(76, 175, 80, 1)',  # Color del borde
-                font=dict(color='#333')  # Color del texto
+                bgcolor='white',  # Fondo blanco
+                bordercolor='green',  # Borde verde
+                font=dict(size=14, color='black'),  # Tamaño y color del texto
             ),
-            
         )
-        # Efecto hover: usando hovertemplate para personalizar el contenido al pasar el cursor
-        fig.update_traces(
-            hovertemplate='<b>Clasificación:</b> %{label}<br><b>Cantidad:</b> %{value}<br>',
-            hoverlabel=dict(bgcolor='white', font_size=16),
-        )
-        # Mostrar gráfica
+
+
+        # Mostrar gráfica de barras en Streamlit
         st.plotly_chart(fig)
 
 # Sidebar para navegación
