@@ -158,7 +158,11 @@ def grafico_estado_salud():
         color='Estado de Salud',
         hover_data={'Cantidad': True},
         labels={'Estado de Salud': 'Estado de Salud', 'Cantidad': 'Número de Árboles'},
-        color_discrete_sequence=px.colors.qualitative.Vivid  # Colores vibrantes
+        color_discrete_sequence=[
+                 px.colors.qualitative.Alphabet[9],
+                 px.colors.qualitative.Alphabet[15],
+               px.colors.qualitative.Plotly[6],
+                 px.colors.qualitative.Plotly[1]],
     )
 
     # Personalizar la apariencia del gráfico
@@ -247,6 +251,19 @@ def mostrar_mapa_calor_arboles():
     # Mostrar el mapa
     folium_static(heatmap)
 
+    # Reemplazar valores nulos en la columna 'especie' con 'Especie desconocida'
+    registro_arboles_df['especie'] = registro_arboles_df['especie'].fillna('Especie desconocida').str.strip().str.lower()
+
+    # Asegurar de que todas las variaciones de nombres similares estén unificadas
+    registro_arboles_df['especie'] = registro_arboles_df['especie'].replace({
+            'sin información': 'especie desconocida',  # Unificar variantes
+            'desconocido': 'especie desconocida',
+            'sin identificar': 'especie desconocida'
+    })
+
+    # Convertir a mayúsculas solo la primera letra de cada palabra (si es necesario para mantener estilo)
+    registro_arboles_df['especie'] = registro_arboles_df['especie'].str.title()
+
     # Calcular la cantidad total de árboles
     cantidad_arboles = registro_arboles_df.dropna(subset=['lat', 'lng']).shape[0]
 
@@ -275,10 +292,14 @@ def mostrar_mapa_calor_arboles():
         color='Especie',
     color_discrete_sequence=[
                  px.colors.qualitative.Alphabet[6],
+                 px.colors.qualitative.Alphabet[0],
                  px.colors.qualitative.Alphabet[11],
-               px.colors.qualitative.Plotly[2],
+                 px.colors.qualitative.Dark2[0],
+                 px.colors.qualitative.Alphabet[20],
+                 px.colors.qualitative.Plotly[2],
                  px.colors.qualitative.Plotly[7],
-               px.colors.qualitative.G10[5]],
+                 px.colors.qualitative.Plotly[3],
+                 px.colors.qualitative.G10[5]],
     )
 
     fig.update_traces(
@@ -308,6 +329,35 @@ def mostrar_mapa_calor_arboles():
     # Mostrar el gráfico en Streamlit
     st.plotly_chart(fig)
 
+    # Definir una lista de especies nativas de Corrientes
+    especies_nativas_corrientes = ['Jacarandá', 'Lapacho Rosado', 'Lapacho amarillo', 'Lapacho', 'Ingá', 'Ceibo', 'Ombú', 'Sauce', 'Urunday',
+    'Pata de Buey (Nativa)', 'Ñangapirí','Palo Borracho', 'Guayaba', 'Mango', 'Sauce criollo', 'Albizia', 'Mamon','Ambaí','Lapachillo','Curupí',
+    'Tipa Blanca', 'Tecoma Lapachillo','Timbó Colorado','Timbó Blanco']
+
+   # Convertir la lista de especies nativas a minúsculas para la comparación
+    especies_nativas_corrientes = [especie.lower().strip() for especie in especies_nativas_corrientes]
+
+    # Filtrar las especies presentes en el dataset
+    especies_presentes = registro_arboles_df['especie'].unique()
+
+    # Normalizar las especies presentes también
+    especies_presentes = [especie.lower().strip() for especie in especies_presentes]
+
+    # Comparar las especies nativas presentes en el dataset (normalizadas)
+    especies_nativas_presentes = [especie for especie in especies_presentes if especie in especies_nativas_corrientes]
+
+    # Calcular la cantidad de especies totales y especies nativas
+    cantidad_total_especies = len(especies_presentes)
+    cantidad_especies_nativas = len(especies_nativas_presentes)
+
+    # Calcular el porcentaje de especies nativas sobre el total de especies
+    porcentaje_especies_nativas = (cantidad_especies_nativas / cantidad_total_especies) * 100
+
+    # Mostrar la cantidad y el porcentaje de especies nativas
+    st.write(f"**Cantidad de especies nativas**: {cantidad_especies_nativas}")
+    st.write(f"**Porcentaje de especies nativas**: {porcentaje_especies_nativas:.2f}%")
+
+
 # Función para mostrar un gráfico de torta con el porcentaje de espacios verdes por barrio
 def mostrar_grafico_espacios_barrios():
     # Contar el número de espacios verdes por barrio
@@ -322,6 +372,14 @@ def mostrar_grafico_espacios_barrios():
     # Calcular el porcentaje de espacios verdes por barrio
     barrios_con_datos['porcentaje_espacios_verdes'] = (barrios_con_datos['cantidad_espacios_verdes'] / total_espacios_verdes) * 100
 
+    # Defino la combinación de colores fuera de la función de la gráfica
+    set3_color = px.colors.qualitative.Set3
+    set2_color = px.colors.qualitative.Set2
+    pastel_color = px.colors.qualitative.Pastel
+    pastel2_color = px.colors.qualitative.Pastel2
+
+    # Combinar colores de ambas paletas
+    combinar_paletas = set3_color + pastel_color + set2_color + pastel2_color + set3_color + pastel_color + set2_color + pastel2_color # Esto combina ambas listas
     # Crear gráfico de torta
     fig = px.pie(
         barrios_con_datos, 
@@ -331,6 +389,7 @@ def mostrar_grafico_espacios_barrios():
         hole=0.3,
         width=800,  # Ajustar ancho del gráfico
         height=600,  # Ajustar alto del gráfico
+        color_discrete_sequence=combinar_paletas
     )
 
     # Personalizar el layout para incluir fondo
@@ -386,7 +445,15 @@ def mostrar_grafica_espacios_verdes(espacios_verdes_filtrados):
             names='Clasificación',
             title='Cantidad de Espacios Verdes por Clasificación',
             hover_data=['Cantidad'],
-            color_discrete_sequence=['#a8e6cf', '#ffcc5c', '#ffab91', '#ff9ebc', '#a7d3f5', '#d7aefb', '#b2f2b2'],
+            color_discrete_sequence=[
+                px.colors.qualitative.Pastel[0],  
+                px.colors.qualitative.Pastel[1], 
+                px.colors.qualitative.Pastel[2],    
+                px.colors.qualitative.Pastel[3],  
+                px.colors.qualitative.Pastel[4],       
+                px.colors.qualitative.Pastel[5],       
+                px.colors.qualitative.Pastel[6],
+]
         )
 
         # Personalizar el layout para incluir fondo
