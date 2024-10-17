@@ -391,7 +391,7 @@ def mostrar_mapa_calor_arboles():
     # Definir una lista de especies nativas de Corrientes
     especies_nativas_corrientes = ['Jacarandá', 'Lapacho Rosado', 'Lapacho amarillo', 'Lapacho', 'Ingá', 'Ceibo', 'Ombú', 'Sauce', 'Urunday',
     'Pata de Buey (Nativa)', 'Ñangapirí','Palo Borracho', 'Guayaba', 'Mango', 'Sauce criollo', 'Albizia', 'Mamon','Ambaí','Lapachillo','Curupí',
-    'Tipa Blanca', 'Tecoma Lapachillo','Timbó Colorado','Timbó Blanco']
+    'Tipa Blanca', 'Tecoma Lapachillo','Timbó Colorado','Timbó Blanco', 'Ibirá Pitá']
 
    # Convertir la lista de especies nativas a minúsculas para la comparación
     especies_nativas_corrientes = [especie.lower().strip() for especie in especies_nativas_corrientes]
@@ -462,6 +462,10 @@ def mostrar_mapa_calor_arboles():
 
     # Mostrar la gráfica de dona justo debajo del texto
     st.plotly_chart(fig_dona_porcentaje, use_container_width=True)
+    # Texto con enlace usando markdown
+    st.write(f"**Fuente de árboles nativos de Argentina**: (https://www.argentina.gob.ar/interior/ambiente/parquesnacionales/recursos-didacticos/arboles-nativos)")
+    st.write(f"**Fuente de árboles nativos de Corrientes**: (https://www.corrientes.com.ar/flora-fauna.php)")
+    st.write(f"**Fuente de árboles nativos de Corrientes**: (https://www.facebook.com/permalink.php/?story_fbid=760536454553050&id=261603547779679&locale=es_LA)")
 
 # Función para mostrar un gráfico de torta con el porcentaje de espacios verdes por barrio
 def mostrar_grafico_espacios_barrios():
