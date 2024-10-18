@@ -27,7 +27,6 @@ st.set_page_config(page_title="Gestion Corrientes Verde", layout="wide")
 # Título principal de la aplicación
 st.title("Gestión Corrientes Verde")
 
-# Agregar una imagen o descripción
 st.markdown(
     """
     <style>
@@ -269,7 +268,7 @@ def grafico_estado_salud():
         title='Frecuencia de Mantenimientos de Árboles desde el año 2023',
         labels={'año_mantenimiento': 'Año', 'cantidad_mantenimientos': 'Cantidad de Mantenimientos'},
         markers=True,
-        color_discrete_sequence=px.colors.qualitative.Vivid  # Colores vibrantes
+        color_discrete_sequence=px.colors.qualitative.Vivid  
     )
 
     # Personalizar el gráfico
@@ -385,10 +384,10 @@ def mostrar_mapa_calor_arboles():
 
     fig.update_yaxes(tickfont=dict(size=9))  # Ajustar el tamaño de fuente de las etiquetas
 
-    # Mostrar el gráfico en Streamlit
+    # Mostrar el gráfico 
     st.plotly_chart(fig)
 
-    # Definir una lista de especies nativas de Corrientes
+    # Se defineuna lista de especies nativas de Corrientes a traves de fuentes externas consultadas
     especies_nativas_corrientes = ['Jacarandá', 'Lapacho Rosado', 'Lapacho amarillo', 'Lapacho', 'Ingá', 'Ceibo', 'Ombú', 'Sauce', 'Urunday',
     'Pata de Buey (Nativa)', 'Ñangapirí','Palo Borracho', 'Guayaba', 'Mango', 'Sauce criollo', 'Albizia', 'Mamon','Ambaí','Lapachillo','Curupí',
     'Tipa Blanca', 'Tecoma Lapachillo','Timbó Colorado','Timbó Blanco', 'Ibirá Pitá']
